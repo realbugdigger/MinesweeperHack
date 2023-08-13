@@ -21,3 +21,12 @@ I see two functions that are looking interesting so that's what i'm going to exa
 
 ![Symbol Tree](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/symbol_tree.png)
 
+First function that I tried is `BeginPaint` in `USER32.DLL` and when looking at dissasembler looks like it has only one cross reference so it has been used only once.
+Unfortunately the decompiled function where its been used is a little to complex so i'll skip it for now and get back to it later if needed.
+
+I'll take a look now at `BitBlt` function in `GDI32.DLL` which is microsoft windows graphics device interface (GDI) library that enables applications to use graphics.
+
+Looking at the [MSDN](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-bitblt) and at the Ghidra decompiled function output looks like source handle device context is what is needed.
+
+![Ghidra BitBtl]()
+
