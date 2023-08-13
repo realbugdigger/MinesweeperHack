@@ -7,7 +7,7 @@ While there are definitely easier ways to crack this code, I've chosen a learn-a
 
 ***
 
-![Minesweeper](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/Minesweeper.png?token=GHSAT0AAAAAACFEL5XOPJEADLBVUVRCZ2FMZGZGV5Q)
+![Minesweeper](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/Minesweeper.png)
 
 When we open the game we can see that it consists of a minefield. 
 The way I would program this game is to make minefield as a matrix and obviously mines should be loaded at random fields everytime we start a game.
@@ -19,5 +19,5 @@ Idea is to find this function and pass it the argument corresponding to flag whe
 After I opened Ghidra dissasembler and loaded the executable, in `Symbol Tree` window there are function imports from external libraries so that's where i looked.
 I see two functions that are looking interesting so that's what i'm going to examine further.
 
-![Symbol Tree]()
+![Symbol Tree](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/symbol_tree.png)
 
