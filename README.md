@@ -22,11 +22,15 @@ I see two functions that are looking interesting so that's what i'm going to exa
 ![Symbol Tree](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/symbol_tree.png)
 
 First function that I tried is `BeginPaint` in `USER32.DLL` and when looking at dissasembler looks like it has only one cross reference so it has been used only once.
-Unfortunately the decompiled function where its been used is a little to complex so i'll skip it for now and get back to it later if needed.
+Unfortunately the decompiled function where its been used is a little to complex so i'll skip it for now and get back to it later if stuck.
 
 I'll take a look now at `BitBlt` function in `GDI32.DLL` which is microsoft windows graphics device interface (GDI) library that enables applications to use graphics.
 
-Looking at the [MSDN](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-bitblt) and at the Ghidra decompiled function output looks like source handle device context is what is needed.
+Looking at the [MSDN](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-bitblt) and at the Ghidra decompiled function output looks like *source handle device context* is what is needed.
 
-![Ghidra BitBtl]()
+![Ghidra BitBtl](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/bitblt.png)
+
+![draw_update]()
+Looking at the two cross refernces for BitBlt I suspect that the second function (not the present one in the picture), when decompiled has some loop and the way i see it that that can be called `draw_initial` function that draws tiles and minefield
+**only** at the start of the game and the first one which i will name `draw_update` is the function that is called when GUI update is needed (displaying mines, opening tiles and setting flags).
 
