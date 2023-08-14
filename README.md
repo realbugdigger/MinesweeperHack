@@ -44,17 +44,29 @@ I'll put breakpoint at appropriate addresses in debugger and test my hipotesis.
 Aaaand my hipotesis turns out to be true. `010026E2` is hit when we start the game and you can see in the next two pictures that first time we hit the breakpoint no tiles are drawn
 but as I keep pressing F9 to continue execution till next breakpoint tilles are beggining to show.
 
-![initial hit]()
+![initial hit](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/initalHit.png)
 
-![second hit on draw_initial]()
+![second hit on draw_initial](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/secondHit.png)
 
 After the whole minefield has been initialized and drawn and application is waiting for our input as soon as I press a random tile, breakpoint `010026E2` has been hit (which is our breakpoint for `draw_update`).
 So this confirms our theory.
 
-Now when i take a closer look at the assembly section where draw_inital breakpoint was hit, there is `[eax+esi]` which to me looks like `esi` is an offset which is being updated throughout the loop and `eax`
+Now when i take a closer look at the assembly section where draw_inital breakpoint was hit, there is `[ebx+esi]` which to me looks like `esi` is an offset which is being updated throughout the loop and `ebx`
 has a fixed location in memory, so this fixed location can probably be start of minefield array in memory!!!
 
-If we look memory section where `eax` is pointing to we can see some interesting stuff.
+If we look memory section where `ebx` is pointing to we can see some interesting stuff.
 
-![Minefield memory]()
+![Minefield memory](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/minefield_memory.png)
+
+`ebx` is pointing to the start of the minefield and `eax` will contain address of the current tile that is being printed.
+The grey marked byte is the location of a first tile in the minefield.
+We can now come to some conclussion based on this memory region:
+- `10` bytes are probably as some kind of row delimiters
+- Since we are playing on minefield with grid size 9x9, there are 10 mines which need to be found. If you look closely there are ten `8F` in the provided memory region so this must be our mines!
+- `0F` is just an empty tile
+ 
+
+
+
+
 
