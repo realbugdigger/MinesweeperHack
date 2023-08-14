@@ -30,7 +30,31 @@ Looking at the [MSDN](https://learn.microsoft.com/en-us/windows/win32/api/wingdi
 
 ![Ghidra BitBtl](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/bitblt.png)
 
-![draw_update]()
-Looking at the two cross refernces for BitBlt I suspect that the second function (not the present one in the picture), when decompiled has some loop and the way i see it that that can be called `draw_initial` function that draws tiles and minefield
-**only** at the start of the game and the first one which i will name `draw_update` is the function that is called when GUI update is needed (displaying mines, opening tiles and setting flags).
+![draw_update](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/draw_update.png)
+Looking at the two cross refernces for BitBlt I see that the `FUN_010026a7` has some loop and I suspect that that is used for drawing tiles and minefield **only** at the start of the game so I'll rename it to `draw_initial`.
+And the `FUN_01002646` which I will rename to `draw_update` I guess that is called when GUI update is needed (displaying mines, opening tiles or setting flags).
+
+I'll put breakpoint at appropriate addresses in debugger and test my hipotesis.
+
+![draw_update_breakpoint](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/drawUpdate_breakpoint.png)
+
+
+![draw_inital_breakpoint](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/drawInitial_breakpoint.png)
+
+Aaaand my hipotesis turns out to be true. `010026E2` is hit when we start the game and you can see in the next two pictures that first time we hit the breakpoint no tiles are drawn
+but as I keep pressing F9 to continue execution till next breakpoint tilles are beggining to show.
+
+![initial hit]()
+
+![second hit on draw_initial]()
+
+After the whole minefield has been initialized and drawn and application is waiting for our input as soon as I press a random tile, breakpoint `010026E2` has been hit (which is our breakpoint for `draw_update`).
+So this confirms our theory.
+
+Now when i take a closer look at the assembly section where draw_inital breakpoint was hit, there is `[eax+esi]` which to me looks like `esi` is an offset which is being updated throughout the loop and `eax`
+has a fixed location in memory, so this fixed location can probably be start of minefield array in memory!!!
+
+If we look memory section where `eax` is pointing to we can see some interesting stuff.
+
+![Minefield memory]()
 
