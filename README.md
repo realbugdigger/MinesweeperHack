@@ -9,10 +9,6 @@ While there are definitely easier ways to crack this code, I've chosen a learn-a
 
 ![Minesweeper](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/Minesweeper.png)
 
-When we open the game we can see that it consists of a minefield. 
-The way I would program this game is to make minefield as a matrix and obviously mines should be loaded at random fields everytime we start a game.
-So I am going to start with that assumption.
-
 Since minesweeper is a GUI application, it uses graphics function which prints those graphics to the screen.
 Idea is to find this function and pass it the argument corresponding to flag whenever there is a mine - we're done.
 
@@ -65,8 +61,52 @@ We can now come to some conclussion based on this memory region:
 - Since we are playing on minefield with grid size 9x9, there are 10 mines which need to be found. If you look closely there are ten `8F` in the provided memory region so this must be our mines!
 - `0F` is just an empty tile
  
+## Code cave
 
+Now my goal is when starting a patched game to see all the mines locations with flags on them.
+This can be accomplished with technique called [Code cave](https://en.wikipedia.org/wiki/Code_cave)
 
+The game is ANDing with 0x1F on line 10026E9 (see x64dbg snippet screenshot above), both 0x0F and 0x8F end up being 0x0F wich is empty tile.
 
+So what i need to do is change the logic:
+```
+if minefield[tile] == 0x8F
+   draw flag
+else
+   draw tile
+```
 
+The present AND instruction takes 3 bytes of opcode. My logic was more than that. That's why code cave is needed.
+
+This is the assembly my logic needs:
+```
+CMP AL, 8F
+JNZ 01004D08
+MOV AL, 0E
+PUSH DWORD PTR DS:[EAX*4+1005A20]
+JMP 010026F3
+```
+
+**How did i get `0E` byte?**
+By flaging mine location and looking into memory to see what was `8F` before and turned into `0E`.
+
+For my assembly code to run, I need to JMP from the original code. But as JMP opcode is more than 3 bytes, meaning I have to override not only the AND instruction but also the one following it (that's why 4th line exists in my assembly).
+The remaining bytes are padded with NOPs.
+
+![patched minesweeper](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/patched.png)
+
+## Alternate ways of approaching the game
+
+When we open the game we can see that it consists of a minefield. 
+The way I would program this game is to make minefield as a matrix and obviously mines should be loaded at random fields everytime we start a game.
+So you can start with that assumption.
+Look for some kind of "random" function in PE imports and I think that can get you rolling.
+
+When you start playing the game there are sounds being made: time ticker and mine explosion (possibly even more)
+Again look in PE Imports for some "sound" function because it's very unlikely they have made their own sound function for the game and just used existing one (possibly from Windows API).
+
+## Conclusion
+
+I hope that this writeup has helped someone and provided them some insight about reverse engineering.
+Inspiration and a lot of accumulated knowledge needed to complete this project came from https://www.begin.re/hacking-minesweeper
 
