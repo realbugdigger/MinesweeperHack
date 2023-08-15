@@ -101,6 +101,8 @@ By flaging tile in minefield and looking into memory to see what was before and 
 For my assembly code to run, I need to JMP from the original code. But as JMP opcode is more than 3 bytes, meaning I have to override not only the AND instruction but also the one following it (that's why 4th line exists in my assembly).
 The remaining bytes are padded with NOPs.
 
+That's it! Now when we patch the game and run it all mine fields are flaged :)
+
 ![patched minesweeper](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/patched.png)
 
 ## Alternate ways of approaching the game
