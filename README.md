@@ -1,7 +1,5 @@
 # Minesweeper Hack
 
-(mozda sve stavi u jedno vreme - sadasnje, kao da sada trazis ili proslo, kao da si vec naso pa opisujes sta si radio)
-
 This game is small enough not to be overwhelming, yet complex enough to make it a fun challenge.
 While there are definitely easier ways to crack this code, I've chosen a learn-as-I-go approach which might not be the quickest, but undoubtedly helps me delve deeper into the essence of reverse engineering.
 
