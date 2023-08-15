@@ -9,6 +9,8 @@ While there are definitely easier ways to crack this code, I've chosen a learn-a
 
 ![Minesweeper](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/Minesweeper.png)
 
+### Imported Libraries
+
 Since minesweeper is a GUI application, it uses graphics function which prints those graphics to the screen.
 Idea is to find this function and print flag whenever there is a mine.
 
@@ -17,8 +19,12 @@ I see two functions that are looking interesting so that's what i'm going to exa
 
 ![Symbol Tree](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/symbol_tree.png)
 
+#### BeginPaint
+
 First function that I will try is `BeginPaint` in `USER32.DLL` and when looking at dissasembler looks like it has only one cross reference so it has been used only once.
-Unfortunately the decompiled function where its been used is a little to complex so i'll skip it for now.
+Unfortunately the decompiled function where its been used is a little complex so i'll skip it for now.
+
+#### BitBlt
 
 I'll take a look now at `BitBlt` function in `GDI32.DLL` which is microsoft windows graphics device interface (GDI) library that enables applications to use graphics.
 
@@ -27,8 +33,10 @@ Looking at the [MSDN](https://learn.microsoft.com/en-us/windows/win32/api/wingdi
 ![Ghidra BitBtl](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/bitblt.png)
 
 ![draw_update](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/draw_update.png)
-Looking at the two cross refernces for BitBlt I see that the `FUN_010026a7` has some loop and I suspect that that is used for drawing tiles and minefield **only** at the start of the game so I'll rename it to `draw_initial`.
-And the `FUN_01002646` which I will rename to `draw_update` I guess that is called when GUI update is needed (e.g. displaying mines, opening tiles or setting flags).
+Looking at the two cross refernces for BitBlt I see that the `FUN_010026a7` has some loop and I suspect that is used for drawing tiles and minefield **only** at the start of the game so I'll rename it to `draw_initial`.
+And the `FUN_01002646` which I will rename to `draw_update`, I guess that is called when GUI update is needed (e.g. displaying mines, opening tiles or setting flags).
+
+### Debugger
 
 I'll put breakpoint at appropriate addresses in debugger and test my hipotesis.
 
@@ -44,20 +52,22 @@ but as I keep pressing F9 to continue execution till next breakpoint tilles are 
 
 ![second hit on draw_initial](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/secondHit.png)
 
-After the whole minefield has been initialized and drawn and application is waiting for our input as soon as I press a random tile, breakpoint `010026E2` has been hit (which is our breakpoint for `draw_update`).
+After the whole minefield has been initialized and drawn and application is waiting for our input, as soon as I press a random tile breakpoint `010026E2` has been hit (which is our breakpoint for `draw_update`).
 So this confirms the hipotesis.
 
-Now when I take a closer look at the assembly section where draw_inital breakpoint was hit, there is `[ebx+esi]` which to me looks like `esi` is an offset which is being updated throughout the loop and `ebx`
-has a fixed location in memory, so this fixed location can probably be start of minefield array in memory!!!
+#### Minefield memory
 
-If we look memory section where `ebx` is pointing to we can see some interesting stuff.
+Now when I take a closer look at the assembly section where draw_inital breakpoint was hit, there is `[ebx+esi]` where `esi` looks like an offset which is being updated throughout the loop and `ebx`
+is a fixed value (location in memory), so as this function is printing tiles throughout the loop this fixed value can probably be start of minefield array in memory!!!
+
+If we look memory section where `ebx` is referencing to we can see some interesting stuff.
 
 ![Minefield memory](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/minefield_memory.png)
 
-`ebx` is pointing to the start of the minefield and `eax` will contain address of the current tile that is being printed.
+`ebx` is referencing to the start of the minefield and `eax` will contain address of the current tile that is being printed.
 The grey marked byte is the location of a first tile in the minefield.
 We can now come to some conclussion based on this memory region:
-- `10` bytes are probably as some kind of row delimiters
+- `10` bytes are probably some kind of row delimiters
 - Since we are playing on minefield with grid size 9x9, there are 10 mines which need to be found. If you look closely there are ten `8F` in the provided memory region so this must be our mines!
 - `0F` is just an empty tile
  
@@ -66,8 +76,8 @@ We can now come to some conclussion based on this memory region:
 Now my goal is when starting a patched game to see all the mines locations with flags on them.
 This can be accomplished with technique called [Code cave](https://en.wikipedia.org/wiki/Code_cave)
 
-The game is ANDing with 0x1F on line 10026E9 (see x64dbg snippet screenshot above), both 0x0F and 0x8F end up being 0x0F wich is empty tile.
-
+The game is performing AND operation with `0x1F` on line `10026E9` (see x64dbg screenshot snippet above), both `0x0F` and `0x8F` end up being `0x0F` which is empty tile.
+ 
 So what i need to do is change the logic:
 ```
 if minefield[tile] == 0x8F
@@ -76,7 +86,7 @@ else
    draw tile
 ```
 
-The present AND instruction takes 3 bytes of opcode. My logic was more than that. That's why code cave is needed.
+The present AND instruction takes 3 bytes of opcode while my logic is more than that. That's why code cave is needed.
 
 This is the assembly my logic needs:
 ```
@@ -88,7 +98,7 @@ JMP 010026F3
 ```
 
 **How did i get `0E` byte?**
-By flaging mine location and looking into memory to see what was `8F` before and turned into `0E`.
+By flaging tile in minefield and looking into memory to see what was before and turned into `0E`.
 
 For my assembly code to run, I need to JMP from the original code. But as JMP opcode is more than 3 bytes, meaning I have to override not only the AND instruction but also the one following it (that's why 4th line exists in my assembly).
 The remaining bytes are padded with NOPs.
@@ -98,7 +108,7 @@ The remaining bytes are padded with NOPs.
 ## Alternate ways of approaching the game
 
 When we open the game we can see that it consists of a minefield. 
-The way I would program this game is to make minefield as a matrix and obviously mines should be loaded at random fields everytime we start a game.
+The way I would program this game is to make minefield as a matrix and making mines load at random fields everytime we start a game.
 So you can start with that assumption.
 Look for some kind of "random" function in PE imports and I think that can get you rolling.
 
