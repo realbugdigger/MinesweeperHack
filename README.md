@@ -5,7 +5,7 @@ While there are definitely easier ways to crack this code, I've chosen a learn-a
 
 ***
 
-![Minesweeper](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/Minesweeper.png)
+![Minesweeper](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/images/Minesweeper.png)
 
 ### Imported Libraries
 
@@ -15,7 +15,7 @@ Idea is to find this function and print flag whenever there is a mine.
 After I open Ghidra and load the executable, in `Symbol Tree` window there are function imports from external libraries so that's where I'll look.
 I see two functions that are looking interesting so that's what i'm going to examine further.
 
-![Symbol Tree](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/symbol_tree.png)
+![Symbol Tree](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/images/symbol_tree.png)
 
 #### BeginPaint
 
@@ -28,9 +28,9 @@ I'll take a look now at `BitBlt` function in `GDI32.DLL` which is microsoft wind
 
 Looking at the [MSDN](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-bitblt) and at the Ghidra decompiled function, looks like *source handle device context* is what is needed.
 
-![Ghidra BitBtl](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/bitblt.png)
+![Ghidra BitBtl](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/images/bitblt.png)
 
-![draw_update](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/draw_update.png)
+![draw_update](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/images/draw_update.png)
 Looking at the two cross refernces for BitBlt I see that the `FUN_010026a7` has some loop and I suspect that is used for drawing tiles and minefield **only** at the start of the game so I'll rename it to `draw_initial`.
 And the `FUN_01002646` which I will rename to `draw_update`, I guess that is called when GUI update is needed (e.g. displaying mines, opening tiles or setting flags).
 
@@ -38,17 +38,17 @@ And the `FUN_01002646` which I will rename to `draw_update`, I guess that is cal
 
 I'll put breakpoint at appropriate addresses in debugger and test my hipotesis.
 
-![draw_update_breakpoint](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/drawUpdate_breakpoint.png)
+![draw_update_breakpoint](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/images/drawUpdate_breakpoint.png)
 
 
-![draw_inital_breakpoint](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/drawInitial_breakpoint.png)
+![draw_inital_breakpoint](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/images/drawInitial_breakpoint.png)
 
 Aaaand my hipotesis seems to be true. `010026E2` is hit when we start the game and you can see in the next two pictures that first time we hit the breakpoint no tiles are drawn
 but as I keep pressing F9 to continue execution till next breakpoint tilles are beggining to show.
 
-![initial hit](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/initalHit.png)
+![initial hit](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/images/initalHit.png)
 
-![second hit on draw_initial](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/secondHit.png)
+![second hit on draw_initial](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/images/secondHit.png)
 
 After the whole minefield has been initialized and drawn and application is waiting for our input, as soon as I press a random tile breakpoint `010026E2` has been hit (which is our breakpoint for `draw_update`).
 So this confirms the hipotesis.
@@ -60,7 +60,7 @@ is a fixed value (location in memory), so as this function is printing tiles thr
 
 If we look memory section where `ebx` is referencing to we can see some interesting stuff.
 
-![Minefield memory](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/minefield_memory.png)
+![Minefield memory](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/images/minefield_memory.png)
 
 `ebx` is referencing to the start of the minefield and `eax` will contain address of the current tile that is being printed.
 The grey marked byte is the location of a first tile in the minefield.
@@ -103,7 +103,7 @@ The remaining bytes are padded with NOPs.
 
 That's it! Now when we patch the game and run it all mine fields are flaged :)
 
-![patched minesweeper](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/patched.png)
+![patched minesweeper](https://raw.githubusercontent.com/realbugdigger/MinesweeperHack/main/images/patched.png)
 
 ## Alternate ways of approaching the game
 
